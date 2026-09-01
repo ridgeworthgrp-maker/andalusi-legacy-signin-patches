@@ -142,7 +142,7 @@ public final class LegacyGoogleSignInActivity extends Activity {
             credential.putString("com.google.android.libraries.identity.googleid.BUNDLE_KEY_ID", email);
             credential.putString("com.google.android.libraries.identity.googleid.BUNDLE_KEY_ID_TOKEN", token);
             Object parsed = Class.forName("f5").getMethod("a", Bundle.class).invoke(null, credential);
-            String parsedToken = (String) Class.forName("al5").getField("b").get(parsed);
+            String parsedToken = (String) Class.forName("yt5").getField("b").get(parsed);
             stage = "Returning the token to Andalusi";
             Toast.makeText(this, "Google token received. Signing in to Andalusi...", Toast.LENGTH_LONG).show();
             LegacyGoogleBridge.complete(requestId, parsedToken);
@@ -175,7 +175,7 @@ public final class LegacyGoogleSignInActivity extends Activity {
         Throwable cause = LegacyGoogleBridge.unwrap(error);
         // Only our fixed messages are shown. External exception messages can contain account data.
         String detail = cause instanceof SignInProblem ? cause.getMessage() : cause.getClass().getSimpleName();
-        diagnostic = "Build: dev.2\nStep: " + stage + "\nMicroG RE: " + microgVersion +
+        diagnostic = "Build: dev.3 (Andalusi 10.2.0)\nStep: " + stage + "\nMicroG RE: " + microgVersion +
                 "\n\n" + detail;
         showDiagnostic();
     }

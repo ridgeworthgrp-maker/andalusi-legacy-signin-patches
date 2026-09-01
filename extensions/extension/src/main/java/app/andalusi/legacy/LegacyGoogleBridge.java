@@ -26,9 +26,9 @@ public final class LegacyGoogleBridge {
 
         Request(long id, Object continuation) throws Exception {
             this.id = id;
-            target = Class.forName("ah2").getMethod("intercepted").invoke(continuation);
-            resume = Class.forName("zg2").getMethod("resumeWith", Object.class);
-            result = Class.forName("e8b").getConstructor(Object.class);
+            target = Class.forName("xl2").getMethod("intercepted").invoke(continuation);
+            resume = Class.forName("wl2").getMethod("resumeWith", Object.class);
+            result = Class.forName("emb").getConstructor(Object.class);
         }
     }
 
@@ -38,7 +38,7 @@ public final class LegacyGoogleBridge {
         final Request request;
         final Serializable suspended;
         try {
-            suspended = (Serializable) Class.forName("ej2").getField("a").get(null);
+            suspended = (Serializable) Class.forName("zn2").getField("a").get(null);
             synchronized (LOCK) {
                 if (pending != null) {
                     return failure(new IllegalStateException("A Google sign-in is already in progress"));
@@ -87,8 +87,8 @@ public final class LegacyGoogleBridge {
             if (!request.suspended) return;
         }
         try {
-            // zk5.invokeSuspend boxes Result before resuming its caller.
-            // A raw String, credential, or raw d8b here violates the caller's ABI.
+            // xt5.invokeSuspend boxes Result before resuming its caller.
+            // A raw String, credential, or raw dmb here violates the caller's ABI.
             request.resume.invoke(request.target, request.result.newInstance(value));
         } catch (Exception error) {
             throw new IllegalStateException("Could not resume Andalusi login", unwrap(error));
@@ -100,17 +100,17 @@ public final class LegacyGoogleBridge {
     }
 
     static void cancel(long id) {
-        // R8 removed xk5's constructors, so it cannot be constructed reflectively.
+        // R8 removed vt5's constructors, so use a retained cancellation exception.
         fail(id, new java.util.concurrent.CancellationException("Google sign-in cancelled"));
     }
 
     private static Serializable failure(Throwable error) {
         try {
-            return (Serializable) Class.forName("d8b")
+            return (Serializable) Class.forName("dmb")
                     .getConstructor(Throwable.class).newInstance(error);
         } catch (Exception reflectionError) {
             // Never pass a Throwable as a successful Kotlin Result.
-            throw new IllegalStateException("Andalusi 10.0.3 Result ABI is unavailable", reflectionError);
+            throw new IllegalStateException("Andalusi 10.2.0 Result ABI is unavailable", reflectionError);
         }
     }
 

@@ -3,7 +3,7 @@ group = "app.andalusi"
 patches {
     about {
         name = "Andalusi Legacy Sign-in Patches"
-        description = "Classic Google sign-in for Andalusi 10.0.3 and MicroG RE"
+        description = "Classic Google sign-in for official Andalusi 10.2.0 and MicroG RE"
         source = "https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches"
         author = "ridgeworthgrp-maker"
         contact = "na"

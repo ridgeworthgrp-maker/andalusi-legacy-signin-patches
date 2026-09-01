@@ -10,21 +10,21 @@ import org.w3c.dom.Element
 private const val EXTENSION_CLASS = "Lapp/andalusi/legacy/LegacyGoogleBridge;"
 private const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
 private const val MICROG_PACKAGE = "app.revanced.android.gms"
-// SHA-1 of the signing certificate in both the original APK's v2 and v3 signing blocks.
-private const val ORIGINAL_CERTIFICATE_SHA1 = "e404353443fb03a54702d53e2c7563d791d92559"
+// Play Store certificate, independently matched to andalusi.app/.well-known/assetlinks.json.
+private const val ORIGINAL_CERTIFICATE_SHA1 = "d5dbccbf463d80e3d9c338283ddf96a6cf16139e"
 
 /**
- * Andalusi 10.0.3 Google login coroutine helper found in classes2.dex:
- *   Lrsh;->C0(Landroid/content/Context;Lah2;)Ljava/io/Serializable;
+ * Play Store Andalusi 10.2.0 Google login coroutine helper:
+ *   Lbf1;->T(Landroid/content/Context;Lxl2;)Ljava/io/Serializable;
  *
- * This fingerprint is intentionally pinned to the exact obfuscated method from 10.0.3.
+ * This fingerprint is intentionally pinned to the verified official 10.2.0 bytecode.
  */
 private object AndalusiGoogleLoginFingerprint : Fingerprint(
-    definingClass = "Lrsh;",
-    name = "C0",
+    definingClass = "Lbf1;",
+    name = "T",
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC, AccessFlags.FINAL),
     returnType = "Ljava/io/Serializable;",
-    parameters = listOf("Landroid/content/Context;", "Lah2;")
+    parameters = listOf("Landroid/content/Context;", "Lxl2;")
 )
 
 /** Adds the transparent bridge activity to Andalusi's real AndroidManifest.xml. */
@@ -88,10 +88,10 @@ private val addLegacyGoogleSignInActivityPatch = resourcePatch {
 @Suppress("unused")
 val andalusiLegacyGoogleSignInPatch = bytecodePatch(
     name = "Andalusi legacy Google sign-in",
-    description = "Replaces Andalusi 10.0.3 Credential Manager login with classic Google Sign-In so it can use MicroG RE.",
+    description = "Replaces official Andalusi 10.2.0 Credential Manager login with classic Google Sign-In so it can use MicroG RE.",
     default = false
 ) {
-    compatibleWith("com.andalusi.app.android"("10.0.3"))
+    compatibleWith("com.andalusi.app.android"("10.2.0"))
     dependsOn(addLegacyGoogleSignInActivityPatch)
     extendWith("extensions/extension.mpe")
 
