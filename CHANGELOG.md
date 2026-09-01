@@ -1,3 +1,9 @@
+## [1.0.0-dev.5](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-09-01)
+
+### 🐛 Bug Fixes
+
+* handle Morphe manifest attributes without namespace metadata ([70ebcd8](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/70ebcd87a64d07500f78e6ae711ea1eab68fc609))
+
 ## [1.0.0-dev.4](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-09-01)
 
 ### 🐛 Bug Fixes
