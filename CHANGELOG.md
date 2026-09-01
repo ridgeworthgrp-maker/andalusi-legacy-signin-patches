@@ -1,3 +1,10 @@
+## [1.0.0-dev.6](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2026-09-01)
+
+### 🐛 Bug Fixes
+
+* add privacy-safe backend login diagnostics ([e594963](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/e594963b873df1146738ecdf8e0dac6c23788f6d))
+* import mutable method instructions ([29f04d3](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/29f04d3c05d116554f1ac2b9323dbb0536113add))
+
 ## [1.0.0-dev.5](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-09-01)
 
 ### 🐛 Bug Fixes
