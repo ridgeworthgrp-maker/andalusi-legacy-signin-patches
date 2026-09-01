@@ -9,6 +9,9 @@ import org.w3c.dom.Element
 
 private const val EXTENSION_CLASS = "Lapp/andalusi/legacy/LegacyGoogleBridge;"
 private const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
+private const val MICROG_PACKAGE = "app.revanced.android.gms"
+// SHA-1 of the signing certificate in both the original APK's v2 and v3 signing blocks.
+private const val ORIGINAL_CERTIFICATE_SHA1 = "e404353443fb03a54702d53e2c7563d791d92559"
 
 /**
  * Andalusi 10.0.3 Google login coroutine helper found in classes2.dex:
@@ -46,6 +49,38 @@ private val addLegacyGoogleSignInActivityPatch = resourcePatch {
                 )
             }
             application.appendChild(activity)
+
+            // MicroG's OAuth request must retain the original app identity after re-signing.
+            // Replace existing entries to coexist with companion certificate/GmsCore patches.
+            fun putMetadata(name: String, value: String) {
+                val nodes = application.getElementsByTagName("meta-data")
+                for (index in nodes.length - 1 downTo 0) {
+                    val node = nodes.item(index) as Element
+                    if (node.getAttributeNS(ANDROID_NS, "name") == name) {
+                        node.parentNode.removeChild(node)
+                    }
+                }
+                application.appendChild(document.createElement("meta-data").apply {
+                    setAttributeNS(ANDROID_NS, "android:name", name)
+                    setAttributeNS(ANDROID_NS, "android:value", value)
+                })
+            }
+            putMetadata("$MICROG_PACKAGE.SPOOFED_PACKAGE_NAME", "com.andalusi.app.android")
+            putMetadata("$MICROG_PACKAGE.SPOOFED_PACKAGE_SIGNATURE", ORIGINAL_CERTIFICATE_SHA1)
+            putMetadata("app.revanced.MICROG_PACKAGE_NAME", MICROG_PACKAGE)
+
+            // Android package visibility is needed for the installed-version and intent checks.
+            val manifest = document.documentElement
+            val queries = document.getElementsByTagName("queries").item(0) as? Element
+                ?: document.createElement("queries").also { manifest.appendChild(it) }
+            val packages = queries.getElementsByTagName("package")
+            if ((0 until packages.length).none {
+                    (packages.item(it) as Element).getAttributeNS(ANDROID_NS, "name") == MICROG_PACKAGE
+                }) {
+                queries.appendChild(document.createElement("package").apply {
+                    setAttributeNS(ANDROID_NS, "android:name", MICROG_PACKAGE)
+                })
+            }
         }
     }
 }

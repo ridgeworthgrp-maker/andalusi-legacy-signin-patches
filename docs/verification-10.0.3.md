@@ -32,7 +32,7 @@ the call, result unboxing, and downstream token handoff.
 
 ## Classic protocol and nonce
 
-The extension sends com.google.android.gms.auth.GOOGLE_SIGN_IN directly to
+The extension sends app.revanced.android.gms.auth.GOOGLE_SIGN_IN directly to
 app.revanced.android.gms with a Parcelable config and nonce extra.
 This is the classic protocol used by SignInHubActivity, but calling MicroG directly
 also preserves the nonce that the bundled hub would discard.
@@ -49,9 +49,32 @@ actual installed app package. No token is fabricated and no backend is bypassed.
 A successful patch compilation is not proof of successful authentication.
 On a phone, verify account selection, consent, successful backend login, cancellation,
 rotation while the picker is open, retry after an error, and an absent MicroG install.
-The installed MicroG RE must support the nonce extra; a missing/mismatched nonce
+MicroG RE 7.0.0 (versionCode 255070000) or newer is required. Source for release
+6.1.4 confirms that its classic sign-in activity never reads or forwards the nonce.
+The installed version is checked before opening the picker. A missing/mismatched nonce
 fails explicitly. Google OAuth recognition of the re-signed app and backend token
 acceptance remain device/server checks. This patch does not override certificate
 checks or change the application package.
 
 The original APK is not included in this repository.
+
+## Corrections after the first phone test
+
+The initial downloadable APK incorrectly combined the original Google action with
+the renamed MicroG package. The action is now renamed too. The user's phone-patched
+copy reached the account chooser because the companion GmsCore patch corrected that
+action, but its MicroG RE 6.1.4 could not satisfy the nonce validation.
+
+The manifest now declares MicroG package visibility and original-package/certificate
+metadata consumed by MicroG RE's PackageSpoofUtils. The certificate SHA-1 is
+e404353443fb03a54702d53e2c7563d791d92559, extracted independently from the original
+APK's v2 and v3 signing blocks. The installed package name is unchanged.
+
+Failure dialogs show the stage, MicroG version, and fixed diagnostic text or exception
+type. They never include tokens, nonce values, email addresses, or external exception
+messages. A toast marks successful token handoff; an error after that toast is in
+the app/backend path, which still requires phone testing.
+
+Versioned protocol source:
+https://github.com/MorpheApp/MicroG-RE/blob/7.0.0/play-services-core/src/main/kotlin/org/microg/gms/auth/signin/AuthSignInActivity.kt
+https://github.com/MorpheApp/MicroG-RE/blob/6.1.4/play-services-core/src/main/kotlin/org/microg/gms/auth/signin/AuthSignInActivity.kt
