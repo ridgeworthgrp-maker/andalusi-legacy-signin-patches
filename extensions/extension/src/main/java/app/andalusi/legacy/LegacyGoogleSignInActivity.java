@@ -9,6 +9,7 @@ import android.content.pm.PackageInfo;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.Base64;
+import android.util.Log;
 import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -17,6 +18,7 @@ import java.security.SecureRandom;
 
 /** Uses classic GOOGLE_SIGN_IN directly: R8 stripped the public facade and Builder. */
 public final class LegacyGoogleSignInActivity extends Activity {
+    private static final String LOG_TAG = "AndalusiLegacyLogin";
     private static final int RC_SIGN_IN = 9482;
     private static final String GMS_PACKAGE = "app.revanced.android.gms";
     private static final String SIGN_IN_ACTION = GMS_PACKAGE + ".auth.GOOGLE_SIGN_IN";
@@ -156,8 +158,11 @@ public final class LegacyGoogleSignInActivity extends Activity {
         if (token == null || token.isEmpty()) throw new SignInProblem("Google returned no ID token.");
         String[] parts = token.split("\\.");
         if (parts.length != 3) throw new SignInProblem("Google returned an invalid ID token.");
+        JSONObject header = new JSONObject(new String(
+                Base64.decode(parts[0], Base64.URL_SAFE), StandardCharsets.UTF_8));
         JSONObject claims = new JSONObject(new String(
                 Base64.decode(parts[1], Base64.URL_SAFE), StandardCharsets.UTF_8));
+        logSafeClaims(header, claims);
         if (!SERVER_CLIENT_ID.equals(claims.optString("aud"))) {
             throw new SignInProblem("Google ID token has the wrong audience.");
         }
@@ -165,6 +170,31 @@ public final class LegacyGoogleSignInActivity extends Activity {
             throw new SignInProblem("MicroG did not preserve the sign-in nonce. Update MicroG RE.");
         }
         // Request binding only. Andalusi's existing backend verifies the signature.
+    }
+
+    private void logSafeClaims(JSONObject header, JSONObject claims) {
+        String algorithm = header.optString("alg");
+        algorithm = "RS256".equals(algorithm) ? "RS256" : algorithm.isEmpty() ? "missing" : "other";
+        String issuer = claims.optString("iss");
+        issuer = ("accounts.google.com".equals(issuer) || "https://accounts.google.com".equals(issuer))
+                ? "google" : issuer.isEmpty() ? "missing" : "other";
+        String authorizedParty = claims.optString("azp");
+        authorizedParty = authorizedParty.isEmpty() ? "missing" :
+                SERVER_CLIENT_ID.equals(authorizedParty) ? "matches" : "other";
+        long issuedAt = claims.optLong("iat", 0);
+        long expiresAt = claims.optLong("exp", 0);
+        long now = System.currentTimeMillis() / 1000;
+        String age = issuedAt > 0 ? Long.toString(now - issuedAt) : "unknown";
+        String lifetime = issuedAt > 0 && expiresAt >= issuedAt ?
+                Long.toString(expiresAt - issuedAt) : "unknown";
+        Log.e(LOG_TAG, "Google credential claims: alg=" + algorithm +
+                " keyId=" + header.has("kid") + " issuer=" + issuer +
+                " audienceMatch=" + SERVER_CLIENT_ID.equals(claims.optString("aud")) +
+                " authorizedParty=" + authorizedParty +
+                " nonceMatch=" + (nonce != null && nonce.equals(claims.optString("nonce"))) +
+                " emailVerified=" + claims.optBoolean("email_verified", false) +
+                " subjectPresent=" + !claims.optString("sub").isEmpty() +
+                " ageSeconds=" + age + " lifetimeSeconds=" + lifetime);
     }
 
     private static final class SignInProblem extends Exception {
@@ -175,7 +205,7 @@ public final class LegacyGoogleSignInActivity extends Activity {
         Throwable cause = LegacyGoogleBridge.unwrap(error);
         // Only our fixed messages are shown. External exception messages can contain account data.
         String detail = cause instanceof SignInProblem ? cause.getMessage() : cause.getClass().getSimpleName();
-        diagnostic = "Build: dev.6 (Andalusi 10.2.0)\nStep: " + stage + "\nMicroG RE: " + microgVersion +
+        diagnostic = "Build: dev.7 (Andalusi 10.2.0)\nStep: " + stage + "\nMicroG RE: " + microgVersion +
                 "\n\n" + detail;
         showDiagnostic();
     }
