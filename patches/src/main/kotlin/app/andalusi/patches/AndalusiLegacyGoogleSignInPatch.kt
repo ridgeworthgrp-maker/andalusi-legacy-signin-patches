@@ -34,6 +34,20 @@ private val addLegacyGoogleSignInActivityPatch = resourcePatch {
             val application = document.getElementsByTagName("application").item(0) as? Element
                 ?: error("Andalusi <application> element was not found")
 
+            // Play's wrapper only starts its installation licence check before delegating
+            // to Andalusi's App. A re-signed build must start the original application.
+            val originalApplication = "com.andalusi.app.android.App"
+            val declaredApplication = application.getAttributeNS(ANDROID_NS, "name")
+            check(declaredApplication in setOf("com.pairip.application.Application", originalApplication)) {
+                "Unexpected Andalusi application class: $declaredApplication"
+            }
+            val providers = application.getElementsByTagName("provider")
+            check((0 until providers.length).none {
+                (providers.item(it) as Element).getAttributeNS(ANDROID_NS, "name") ==
+                    "com.pairip.licensecheck.LicenseContentProvider"
+            }) { "Unexpected additional Play licence startup provider" }
+            application.setAttributeNS(ANDROID_NS, "android:name", originalApplication)
+
             val activity = document.createElement("activity").apply {
                 setAttributeNS(
                     ANDROID_NS,

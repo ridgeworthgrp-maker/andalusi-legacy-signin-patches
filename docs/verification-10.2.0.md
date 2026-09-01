@@ -58,6 +58,26 @@ APKEditor 1.4.9 merges these components with version validation and native-libra
 extraction enabled. Morphe applies only this patch to the merged APK. The final
 APK is signed with the same local patch key used for previous downloadable builds.
 
+## Startup correction after the dev.3 phone test
+
+The dev.3 APK compiled and patched successfully, but the phone redirected to Google
+Play before sign-in. The original manifest declares `com.pairip.application.Application`.
+Its only override calls `LicenseClient.checkLicense(context)` and then delegates to
+`com.andalusi.app.android.App.attachBaseContext(context)`. The licensing client's
+NOT_LICENSED path starts the Play-supplied intent and closes the app, matching the report.
+This is the [Play installer protection](https://support.google.com/googleplay/android-developer/answer/10183279).
+
+The patched manifest now names Andalusi's own `App` directly, skipping the added
+Play installation-licence startup wrapper. The original application initialization,
+account authentication, Google token validation, backend login, billing and subscription
+code remain intact. No successful licence response is fabricated.
+
+Direct DEX inspection found two callers of `LicenseClient.checkLicense`: the wrapper
+and `LicenseContentProvider.onCreate`. The provider is absent from this version's
+manifest. The patch rejects an unexpected application class or a declared licensing
+provider instead of silently assuming that another build has the same startup path.
+Actual launch and sign-in on the repaired APK still require a phone test.
+
 ## Runtime requirements
 
 MicroG RE 7.0.0 (255070000) or newer is required for classic sign-in nonce support.
