@@ -1,3 +1,9 @@
+## [1.0.0-dev.2](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2026-09-01)
+
+### 🐛 Bug Fixes
+
+* route MicroG RE sign-in and explain unsupported versions ([53e6e83](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/53e6e83c9fea192f51a9365ad404c637aa58e598))
+
 ## 1.0.0-dev.1 (2026-09-01)
 
 ### 🐛 Bug Fixes
