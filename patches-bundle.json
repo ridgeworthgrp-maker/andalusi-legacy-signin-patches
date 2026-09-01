@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-01T21:47:16",
-  "description": "## [1.0.0-dev.3](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-09-01)\n\n### 🐛 Bug Fixes\n\n* target official Play Store 10.2.0 and correct OAuth identity ([8e7912f](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/8e7912f7c0f25af55251514cf15e894f4a227dc6))",
-  "download_url": "https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/releases/download/v1.0.0-dev.3/patches-1.0.0-dev.3.mpp",
+  "created_at": "2026-09-01T22:10:54",
+  "description": "## [1.0.0-dev.4](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-09-01)\n\n### 🐛 Bug Fixes\n\n* restore Andalusi application startup in patched builds ([10554a1](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/10554a1e168f1e4871b5cdc0711f072b9022e1d0))",
+  "download_url": "https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/releases/download/v1.0.0-dev.4/patches-1.0.0-dev.4.mpp",
   "signature_download_url": "",
-  "version": "1.0.0-dev.3"
+  "version": "1.0.0-dev.4"
 }

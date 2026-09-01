@@ -1,3 +1,9 @@
+## [1.0.0-dev.4](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-09-01)
+
+### 🐛 Bug Fixes
+
+* restore Andalusi application startup in patched builds ([10554a1](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/10554a1e168f1e4871b5cdc0711f072b9022e1d0))
+
 ## [1.0.0-dev.3](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-09-01)
 
 ### 🐛 Bug Fixes
