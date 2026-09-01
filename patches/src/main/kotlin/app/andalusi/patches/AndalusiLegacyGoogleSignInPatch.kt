@@ -5,6 +5,8 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import org.w3c.dom.Element
 
 private const val EXTENSION_CLASS = "Lapp/andalusi/legacy/LegacyGoogleBridge;"
@@ -29,6 +31,15 @@ private object AndalusiGoogleLoginFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC, AccessFlags.FINAL),
     returnType = "Ljava/io/Serializable;",
     parameters = listOf("Landroid/content/Context;", "Lxl2;")
+)
+
+/** Andalusi 10.2.0 repository method that submits the Google ID token. */
+private object AndalusiGoogleBackendLoginFingerprint : Fingerprint(
+    definingClass = "Lke8;",
+    name = "b",
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),
+    returnType = "Ljava/io/Serializable;",
+    parameters = listOf("Ljava/lang/String;", "Lxl2;")
 )
 
 /** Adds the transparent bridge activity to Andalusi's real AndroidManifest.xml. */
@@ -124,5 +135,21 @@ val andalusiLegacyGoogleSignInPatch = bytecodePatch(
                 return-object v0
             """.trimIndent()
         )
+
+        // Andalusi catches every backend exception and replaces it with a generic snackbar.
+        // Inspect each result immediately before it returns. The extension ignores successful
+        // strings and suspended coroutine markers and logs only a safe error type/status.
+        val backendMethod = AndalusiGoogleBackendLoginFingerprint.method
+        backendMethod.instructions.withIndex()
+            .filter { it.value.opcode == Opcode.RETURN_OBJECT }
+            .asReversed()
+            .forEach { (index, instruction) ->
+                val register = (instruction as OneRegisterInstruction).registerA
+                backendMethod.addInstructions(
+                    index,
+                    "invoke-static/range {v$register .. v$register}, " +
+                        "$EXTENSION_CLASS->inspectBackendResult(Ljava/lang/Object;)V"
+                )
+            }
     }
 }

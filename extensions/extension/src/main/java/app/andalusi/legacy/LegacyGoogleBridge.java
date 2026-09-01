@@ -4,12 +4,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /** Version-pinned adapter for Andalusi's suspend function returning Result<String>. */
 public final class LegacyGoogleBridge {
+    private static final String LOG_TAG = "AndalusiLegacyLogin";
     static final String REQUEST_ID = "andalusi.legacy.request";
     private static final Object LOCK = new Object();
     private static long nextId;
@@ -33,6 +36,51 @@ public final class LegacyGoogleBridge {
     }
 
     private LegacyGoogleBridge() {}
+
+    /**
+     * Records enough information to diagnose Andalusi's hidden backend failure without exposing
+     * the Google token, email address, request URL, server response, or exception message.
+     */
+    public static void inspectBackendResult(Object value) {
+        if (value == null || !"dmb".equals(value.getClass().getName())) return;
+        try {
+            Field failureField = value.getClass().getField("a");
+            Object failure = failureField.get(value);
+            if (!(failure instanceof Throwable)) return;
+            Throwable error = (Throwable) failure;
+            StringBuilder types = new StringBuilder();
+            Throwable cursor = error;
+            for (int depth = 0; cursor != null && depth < 6; depth++) {
+                if (depth > 0) types.append('>');
+                String type = cursor.getClass().getSimpleName();
+                if (type.isEmpty()) type = "Throwable";
+                types.append(type.replaceAll("[^A-Za-z0-9_$]", ""));
+                cursor = cursor.getCause();
+            }
+            Integer status = findHttpStatus(error);
+            Log.e(LOG_TAG, "Backend Google login failed: type=" + types +
+                    " status=" + (status == null ? "unknown" : status));
+        } catch (Throwable diagnosticError) {
+            Log.e(LOG_TAG, "Backend Google login failed: type=unavailable status=unknown");
+        }
+    }
+
+    private static Integer findHttpStatus(Throwable error) {
+        for (Throwable cursor = error, next; cursor != null; cursor = next) {
+            next = cursor.getCause();
+            try {
+                Object response = cursor.getClass().getMethod("getResponse").invoke(cursor);
+                if (response == null) continue;
+                Object status = response.getClass().getMethod("getStatus").invoke(response);
+                if (status == null) continue;
+                Object value = status.getClass().getMethod("getValue").invoke(status);
+                if (value instanceof Number) return ((Number) value).intValue();
+            } catch (Throwable ignored) {
+                // Some network failures have no HTTP response.
+            }
+        }
+        return null;
+    }
 
     public static Serializable begin(Context context, Object continuation) {
         final Request request;
