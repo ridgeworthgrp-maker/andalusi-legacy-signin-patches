@@ -1,12 +1,11 @@
-group = "app.template"
+group = "app.andalusi"
 
 patches {
-    // TODO: Update this section with your project details.
     about {
-        name = "UserXYZ Patches"
-        description = "Patches for apps I like"
-        source = "git@github.com:UserXYZ/morphe-patches.git"
-        author = "Awesome dev"
+        name = "Andalusi Legacy Sign-in Patches"
+        description = "Classic Google sign-in for Andalusi 10.0.3 and MicroG RE"
+        source = "https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches"
+        author = "ridgeworthgrp-maker"
         contact = "na"
         website = "na"
         license = "GPLv3"

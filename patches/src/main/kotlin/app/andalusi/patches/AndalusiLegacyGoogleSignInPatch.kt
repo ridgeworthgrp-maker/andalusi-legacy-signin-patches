@@ -21,7 +21,7 @@ private object AndalusiGoogleLoginFingerprint : Fingerprint(
     name = "C0",
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC, AccessFlags.FINAL),
     returnType = "Ljava/io/Serializable;",
-    parameters = listOf("Landroid/content/Context;", "L")
+    parameters = listOf("Landroid/content/Context;", "Lah2;")
 )
 
 /** Adds the transparent bridge activity to Andalusi's real AndroidManifest.xml. */
@@ -66,9 +66,10 @@ val andalusiLegacyGoogleSignInPatch = bytecodePatch(
         AndalusiGoogleLoginFingerprint.method.addInstructions(
             0,
             """
-                invoke-static {p0, p1}, $EXTENSION_CLASS->begin(Landroid/content/Context;Ljava/lang/Object;)Ljava/io/Serializable;
+                invoke-static/range {p0 .. p1}, $EXTENSION_CLASS->begin(Landroid/content/Context;Ljava/lang/Object;)Ljava/io/Serializable;
                 move-result-object v0
                 return-object v0
             """.trimIndent()
         )
     }
+}

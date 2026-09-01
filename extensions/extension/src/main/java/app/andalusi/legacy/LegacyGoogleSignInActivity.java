@@ -2,202 +2,142 @@ package app.andalusi.legacy;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
+import android.util.Base64;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-
-/**
- * Transparent one-shot Activity that invokes the classic GoogleSignIn API already bundled
- * in Andalusi, receives the result, converts it to the exact Bundle expected by Andalusi's
- * existing Google ID credential parser, then resumes the original login coroutine.
- */
+/** Uses classic GOOGLE_SIGN_IN directly: R8 stripped the public facade and Builder. */
 public final class LegacyGoogleSignInActivity extends Activity {
     private static final int RC_SIGN_IN = 9482;
-
-    // Exact web/server OAuth client ID embedded in Andalusi 10.0.3.
+    private static final String GMS_PACKAGE = "app.revanced.android.gms";
     private static final String SERVER_CLIENT_ID =
             "752406979491-m39pf3vd9p88r5buiidqtirjt45e2k0i.apps.googleusercontent.com";
-
-    private static final String KEY_ID =
-            "com.google.android.libraries.identity.googleid.BUNDLE_KEY_ID";
-    private static final String KEY_ID_TOKEN =
-            "com.google.android.libraries.identity.googleid.BUNDLE_KEY_ID_TOKEN";
-    private static final String KEY_DISPLAY_NAME =
-            "com.google.android.libraries.identity.googleid.BUNDLE_KEY_DISPLAY_NAME";
-    private static final String KEY_FAMILY_NAME =
-            "com.google.android.libraries.identity.googleid.BUNDLE_KEY_FAMILY_NAME";
-    private static final String KEY_GIVEN_NAME =
-            "com.google.android.libraries.identity.googleid.BUNDLE_KEY_GIVEN_NAME";
-    private static final String KEY_PROFILE_PICTURE_URI =
-            "com.google.android.libraries.identity.googleid.BUNDLE_KEY_PROFILE_PICTURE_URI";
+    private long requestId;
+    private String nonce;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        if (savedInstanceState == null) {
-            try {
-                startLegacyGoogleSignIn();
-            } catch (Throwable t) {
-                LegacyGoogleBridge.fail(t);
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        requestId = getIntent().getLongExtra(LegacyGoogleBridge.REQUEST_ID, -1);
+        if (!LegacyGoogleBridge.isPending(requestId)) {
+            // The original coroutine no longer exists after process death.
+            finish();
+            return;
+        }
+        if (state != null) {
+            nonce = state.getString("nonce");
+            if (nonce == null) {
+                LegacyGoogleBridge.fail(requestId, new IllegalStateException("Missing sign-in nonce"));
                 finish();
             }
+            return;
+        }
+        try {
+            byte[] random = new byte[32];
+            new SecureRandom().nextBytes(random);
+            nonce = Base64.encodeToString(random, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
+            startLegacyGoogleSignIn();
+        } catch (Exception error) {
+            LegacyGoogleBridge.fail(requestId, error);
+            finish();
         }
     }
 
-    /**
-     * Reflection is intentional: the extension module does not need to compile against Google's
-     * libraries. Andalusi already contains these classic GoogleSignIn classes at runtime.
-     */
     private void startLegacyGoogleSignIn() throws Exception {
-        Class<?> optionsClass = Class.forName(
-                "com.google.android.gms.auth.api.signin.GoogleSignInOptions"
-        );
-        Class<?> builderClass = Class.forName(
-                "com.google.android.gms.auth.api.signin.GoogleSignInOptions$Builder"
-        );
+        // Verified GoogleSignInOptions.b(String) is the retained JSON factory.
+        JSONObject json = new JSONObject();
+        json.put("scopes", new JSONArray().put("openid").put("email").put("profile"));
+        json.put("idTokenRequested", true);
+        json.put("serverAuthRequested", false);
+        json.put("forceCodeForRefreshToken", false);
+        json.put("serverClientId", SERVER_CLIENT_ID);
+        Class<?> optionsClass = Class.forName("com.google.android.gms.auth.api.signin.GoogleSignInOptions");
+        Object options = optionsClass.getMethod("b", String.class).invoke(null, json.toString());
+        Class<?> configClass = Class.forName("com.google.android.gms.auth.api.signin.internal.SignInConfiguration");
+        Parcelable config = (Parcelable) configClass.getConstructor(String.class, optionsClass)
+                .newInstance(getPackageName(), options);
+        Intent intent = new Intent("com.google.android.gms.auth.GOOGLE_SIGN_IN");
+        intent.setPackage(GMS_PACKAGE);
+        intent.putExtra("config", config);
+        // MicroG RE supports this extra; the app's SignInHubActivity would drop it.
+        intent.putExtra("nonce", nonce);
+        startActivityForResult(intent, RC_SIGN_IN);
+    }
 
-        Object defaultSignIn = optionsClass.getField("DEFAULT_SIGN_IN").get(null);
-        Constructor<?> builderConstructor = builderClass.getConstructor(optionsClass);
-        Object builder = builderConstructor.newInstance(defaultSignIn);
-
-        builderClass.getMethod("requestIdToken", String.class)
-                .invoke(builder, SERVER_CLIENT_ID);
-        builderClass.getMethod("requestEmail").invoke(builder);
-        Object options = builderClass.getMethod("build").invoke(builder);
-
-        Class<?> googleSignInClass = Class.forName(
-                "com.google.android.gms.auth.api.signin.GoogleSignIn"
-        );
-        Object client = googleSignInClass
-                .getMethod("getClient", Activity.class, optionsClass)
-                .invoke(null, this, options);
-
-        Intent signInIntent = (Intent) client.getClass()
-                .getMethod("getSignInIntent")
-                .invoke(client);
-
-        startActivityForResult(signInIntent, RC_SIGN_IN);
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        state.putString("nonce", nonce);
+        super.onSaveInstanceState(state);
     }
 
     @Override
     @SuppressWarnings("deprecation")
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode != RC_SIGN_IN) {
-            return;
-        }
-
+        if (requestCode != RC_SIGN_IN) return;
         try {
-            if (data == null) {
-                throw new IllegalStateException("Google sign-in returned no Intent data");
+            if (!LegacyGoogleBridge.isPending(requestId)) return;
+            if (resultCode != RESULT_OK || data == null) {
+                LegacyGoogleBridge.cancel(requestId);
+                return;
             }
-
-            Object account = getGoogleAccount(data);
-            Object andalusiCredential = convertAccountToAndalusiCredential(account);
-            LegacyGoogleBridge.complete(andalusiCredential);
-        } catch (Throwable t) {
-            LegacyGoogleBridge.fail(t);
+            data.setExtrasClassLoader(getClassLoader());
+            Object status = data.getParcelableExtra("googleSignInStatus");
+            if (status == null) throw new IllegalStateException("MicroG returned no sign-in status");
+            int code = status.getClass().getField("a").getInt(status);
+            if (code == 13 || code == 16 || code == 12501) {
+                LegacyGoogleBridge.cancel(requestId);
+                return;
+            }
+            if (code > 0) throw new IllegalStateException("MicroG Google sign-in failed (status " + code + ")");
+            Object account = data.getParcelableExtra("googleSignInAccount");
+            if (account == null) throw new IllegalStateException("MicroG returned no Google account");
+            // Verified retained fields: b = ID token, c = email.
+            String token = (String) account.getClass().getField("b").get(account);
+            String email = (String) account.getClass().getField("c").get(account);
+            validateToken(token);
+            if (email == null || email.isEmpty()) throw new IllegalStateException("Google account returned no email");
+            Bundle credential = new Bundle();
+            credential.putString("com.google.android.libraries.identity.googleid.BUNDLE_KEY_ID", email);
+            credential.putString("com.google.android.libraries.identity.googleid.BUNDLE_KEY_ID_TOKEN", token);
+            Object parsed = Class.forName("f5").getMethod("a", Bundle.class).invoke(null, credential);
+            String parsedToken = (String) Class.forName("al5").getField("b").get(parsed);
+            LegacyGoogleBridge.complete(requestId, parsedToken);
+        } catch (Exception error) {
+            LegacyGoogleBridge.fail(requestId, error);
         } finally {
             finish();
         }
     }
 
-    private Object getGoogleAccount(Intent data) throws Exception {
-        Class<?> googleSignInClass = Class.forName(
-                "com.google.android.gms.auth.api.signin.GoogleSignIn"
-        );
-        Object task = googleSignInClass
-                .getMethod("getSignedInAccountFromIntent", Intent.class)
-                .invoke(null, data);
-
-        Class<?> taskClass = Class.forName("com.google.android.gms.tasks.Task");
-        boolean successful = (Boolean) taskClass.getMethod("isSuccessful").invoke(task);
-
-        if (!successful) {
-            Throwable exception = (Throwable) taskClass.getMethod("getException").invoke(task);
-            if (exception != null) {
-                throw new RuntimeException("Classic Google sign-in failed", exception);
-            }
-            throw new IllegalStateException("Classic Google sign-in failed without an exception");
+    private void validateToken(String token) throws Exception {
+        if (token == null || token.isEmpty()) throw new IllegalStateException("Google returned no ID token");
+        String[] parts = token.split("\\.");
+        if (parts.length != 3) throw new IllegalStateException("Google returned an invalid ID token");
+        JSONObject claims = new JSONObject(new String(
+                Base64.decode(parts[1], Base64.URL_SAFE), StandardCharsets.UTF_8));
+        if (!SERVER_CLIENT_ID.equals(claims.optString("aud"))) {
+            throw new IllegalStateException("Google ID token has the wrong audience");
         }
-
-        Object account = taskClass.getMethod("getResult").invoke(task);
-        if (account == null) {
-            throw new IllegalStateException("Google sign-in returned no account");
+        if (nonce == null || !nonce.equals(claims.optString("nonce"))) {
+            throw new IllegalStateException("MicroG did not preserve the sign-in nonce; update MicroG RE");
         }
-        return account;
-    }
-
-    private Object convertAccountToAndalusiCredential(Object account) throws Exception {
-        Class<?> accountClass = account.getClass();
-
-        String idToken = stringGetter(accountClass, account, "getIdToken");
-        String email = stringGetter(accountClass, account, "getEmail");
-        String id = stringGetter(accountClass, account, "getId");
-        String displayName = stringGetter(accountClass, account, "getDisplayName");
-        String givenName = stringGetter(accountClass, account, "getGivenName");
-        String familyName = stringGetter(accountClass, account, "getFamilyName");
-
-        if (idToken == null || idToken.isEmpty()) {
-            throw new IllegalStateException(
-                    "Google account was returned but there is no ID token. " +
-                    "This normally means the MicroG/OAuth routing step is still failing."
-            );
-        }
-
-        // GoogleIdTokenCredential.id is normally the account identifier/email for this flow.
-        String credentialId = (email != null && !email.isEmpty()) ? email : id;
-        if (credentialId == null || credentialId.isEmpty()) {
-            throw new IllegalStateException("Google account returned neither email nor account ID");
-        }
-
-        Bundle bundle = new Bundle();
-        bundle.putString(KEY_ID, credentialId);
-        bundle.putString(KEY_ID_TOKEN, idToken);
-        putIfNotNull(bundle, KEY_DISPLAY_NAME, displayName);
-        putIfNotNull(bundle, KEY_GIVEN_NAME, givenName);
-        putIfNotNull(bundle, KEY_FAMILY_NAME, familyName);
-
-        try {
-            Method getPhotoUrl = accountClass.getMethod("getPhotoUrl");
-            Object photo = getPhotoUrl.invoke(account);
-            if (photo instanceof Uri) {
-                bundle.putParcelable(KEY_PROFILE_PICTURE_URI, (Uri) photo);
-            }
-        } catch (NoSuchMethodException ignored) {
-            // Optional field.
-        }
-
-        // Exact Andalusi 10.0.3 parser found in classes.dex:
-        //   Lf5;->a(Landroid/os/Bundle;)Lal5;
-        Class<?> parser = Class.forName("f5");
-        Method parse = parser.getDeclaredMethod("a", Bundle.class);
-        parse.setAccessible(true);
-        return parse.invoke(null, bundle);
-    }
-
-    private static String stringGetter(Class<?> type, Object target, String methodName) {
-        try {
-            Object value = type.getMethod(methodName).invoke(target);
-            return value instanceof String ? (String) value : null;
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static void putIfNotNull(Bundle bundle, String key, String value) {
-        if (value != null) {
-            bundle.putString(key, value);
-        }
+        // Request binding only. Andalusi's existing backend verifies the signature.
     }
 
     @Override
     public void onBackPressed() {
-        LegacyGoogleBridge.fail(new RuntimeException("Google sign-in cancelled"));
+        LegacyGoogleBridge.cancel(requestId);
         super.onBackPressed();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (isFinishing()) LegacyGoogleBridge.cancel(requestId);
+        super.onDestroy();
     }
 }
