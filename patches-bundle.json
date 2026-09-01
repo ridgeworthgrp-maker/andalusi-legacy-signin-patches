@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-01T22:43:30",
-  "description": "## [1.0.0-dev.6](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2026-09-01)\n\n### 🐛 Bug Fixes\n\n* add privacy-safe backend login diagnostics ([e594963](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/e594963b873df1146738ecdf8e0dac6c23788f6d))\n* import mutable method instructions ([29f04d3](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/29f04d3c05d116554f1ac2b9323dbb0536113add))",
-  "download_url": "https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/releases/download/v1.0.0-dev.6/patches-1.0.0-dev.6.mpp",
+  "created_at": "2026-09-01T23:05:36",
+  "description": "## [1.0.0-dev.7](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2026-09-01)\n\n### 🐛 Bug Fixes\n\n* add privacy-safe Google credential diagnostics ([3ddcd9e](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/3ddcd9e23b01d63990d6c14f1dc3316e25ee6aee))",
+  "download_url": "https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/releases/download/v1.0.0-dev.7/patches-1.0.0-dev.7.mpp",
   "signature_download_url": "",
-  "version": "1.0.0-dev.6"
+  "version": "1.0.0-dev.7"
 }

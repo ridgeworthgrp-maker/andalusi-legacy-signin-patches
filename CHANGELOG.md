@@ -1,3 +1,9 @@
+## [1.0.0-dev.7](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2026-09-01)
+
+### 🐛 Bug Fixes
+
+* add privacy-safe Google credential diagnostics ([3ddcd9e](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/3ddcd9e23b01d63990d6c14f1dc3316e25ee6aee))
+
 ## [1.0.0-dev.6](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2026-09-01)
 
 ### 🐛 Bug Fixes
