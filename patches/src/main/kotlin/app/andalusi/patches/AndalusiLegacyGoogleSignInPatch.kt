@@ -13,6 +13,10 @@ private const val MICROG_PACKAGE = "app.revanced.android.gms"
 // Play Store certificate, independently matched to andalusi.app/.well-known/assetlinks.json.
 private const val ORIGINAL_CERTIFICATE_SHA1 = "d5dbccbf463d80e3d9c338283ddf96a6cf16139e"
 
+// Morphe's document parser may retain android: prefixes without namespace metadata.
+private fun Element.androidAttribute(name: String): String =
+    getAttributeNS(ANDROID_NS, name).ifEmpty { getAttribute("android:$name") }
+
 /**
  * Play Store Andalusi 10.2.0 Google login coroutine helper:
  *   Lbf1;->T(Landroid/content/Context;Lxl2;)Ljava/io/Serializable;
@@ -37,16 +41,16 @@ private val addLegacyGoogleSignInActivityPatch = resourcePatch {
             // Play's wrapper only starts its installation licence check before delegating
             // to Andalusi's App. A re-signed build must start the original application.
             val originalApplication = "com.andalusi.app.android.App"
-            val declaredApplication = application.getAttributeNS(ANDROID_NS, "name")
+            val declaredApplication = application.androidAttribute("name")
             check(declaredApplication in setOf("com.pairip.application.Application", originalApplication)) {
                 "Unexpected Andalusi application class: $declaredApplication"
             }
             val providers = application.getElementsByTagName("provider")
             check((0 until providers.length).none {
-                (providers.item(it) as Element).getAttributeNS(ANDROID_NS, "name") ==
+                (providers.item(it) as Element).androidAttribute("name") ==
                     "com.pairip.licensecheck.LicenseContentProvider"
             }) { "Unexpected additional Play licence startup provider" }
-            application.setAttributeNS(ANDROID_NS, "android:name", originalApplication)
+            application.setAttribute("android:name", originalApplication)
 
             val activity = document.createElement("activity").apply {
                 setAttributeNS(
@@ -70,7 +74,7 @@ private val addLegacyGoogleSignInActivityPatch = resourcePatch {
                 val nodes = application.getElementsByTagName("meta-data")
                 for (index in nodes.length - 1 downTo 0) {
                     val node = nodes.item(index) as Element
-                    if (node.getAttributeNS(ANDROID_NS, "name") == name) {
+                    if (node.androidAttribute("name") == name) {
                         node.parentNode.removeChild(node)
                     }
                 }
@@ -89,7 +93,7 @@ private val addLegacyGoogleSignInActivityPatch = resourcePatch {
                 ?: document.createElement("queries").also { manifest.appendChild(it) }
             val packages = queries.getElementsByTagName("package")
             if ((0 until packages.length).none {
-                    (packages.item(it) as Element).getAttributeNS(ANDROID_NS, "name") == MICROG_PACKAGE
+                    (packages.item(it) as Element).androidAttribute("name") == MICROG_PACKAGE
                 }) {
                 queries.appendChild(document.createElement("package").apply {
                     setAttributeNS(ANDROID_NS, "android:name", MICROG_PACKAGE)
