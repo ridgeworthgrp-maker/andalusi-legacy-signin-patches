@@ -205,7 +205,7 @@ public final class LegacyGoogleSignInActivity extends Activity {
         Throwable cause = LegacyGoogleBridge.unwrap(error);
         // Only our fixed messages are shown. External exception messages can contain account data.
         String detail = cause instanceof SignInProblem ? cause.getMessage() : cause.getClass().getSimpleName();
-        diagnostic = "Build: dev.7 (Andalusi 10.2.0)\nStep: " + stage + "\nMicroG RE: " + microgVersion +
+        diagnostic = "Build: dev.8 (Andalusi 10.2.0)\nStep: " + stage + "\nMicroG RE: " + microgVersion +
                 "\n\n" + detail;
         showDiagnostic();
     }

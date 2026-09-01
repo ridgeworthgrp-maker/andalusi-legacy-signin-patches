@@ -43,6 +43,28 @@ private object AndalusiGoogleBackendLoginFingerprint : Fingerprint(
     parameters = listOf("Ljava/lang/String;", "Lxl2;")
 )
 
+private fun addBackendLoginDiagnostics() {
+    val backendMethod = AndalusiGoogleBackendLoginFingerprint.method
+    // p1 is the Google ID token on this instance method. The extension records only safe,
+    // non-identifying claim classifications, never the token or account fields.
+    backendMethod.addInstructions(
+        0,
+        "invoke-static/range {p1 .. p1}, " +
+            "$EXTENSION_CLASS->inspectGoogleToken(Ljava/lang/String;)V"
+    )
+    backendMethod.instructions.withIndex()
+        .filter { it.value.opcode == Opcode.RETURN_OBJECT }
+        .asReversed()
+        .forEach { (index, instruction) ->
+            val register = (instruction as OneRegisterInstruction).registerA
+            backendMethod.addInstructions(
+                index,
+                "invoke-static/range {v$register .. v$register}, " +
+                    "$EXTENSION_CLASS->inspectBackendResult(Ljava/lang/Object;)V"
+            )
+        }
+}
+
 /** Adds the transparent bridge activity to Andalusi's real AndroidManifest.xml. */
 private val addLegacyGoogleSignInActivityPatch = resourcePatch {
     execute {
@@ -140,17 +162,21 @@ val andalusiLegacyGoogleSignInPatch = bytecodePatch(
         // Andalusi catches every backend exception and replaces it with a generic snackbar.
         // Inspect each result immediately before it returns. The extension ignores successful
         // strings and suspended coroutine markers and logs only a safe error type/status.
-        val backendMethod = AndalusiGoogleBackendLoginFingerprint.method
-        backendMethod.instructions.withIndex()
-            .filter { it.value.opcode == Opcode.RETURN_OBJECT }
-            .asReversed()
-            .forEach { (index, instruction) ->
-                val register = (instruction as OneRegisterInstruction).registerA
-                backendMethod.addInstructions(
-                    index,
-                    "invoke-static/range {v$register .. v$register}, " +
-                        "$EXTENSION_CLASS->inspectBackendResult(Ljava/lang/Object;)V"
-                )
-            }
+        addBackendLoginDiagnostics()
+    }
+}
+
+@Suppress("unused")
+val andalusiMicroGCredentialManagerSignInPatch = bytecodePatch(
+    name = "Andalusi MicroG Credential Manager sign-in",
+    description = "Keeps official Andalusi 10.2.0 Credential Manager login and adds MicroG RE identity routing metadata.",
+    default = false
+) {
+    compatibleWith("com.andalusi.app.android"("10.2.0"))
+    dependsOn(addLegacyGoogleSignInActivityPatch)
+    extendWith("extensions/extension.mpe")
+
+    execute {
+        addBackendLoginDiagnostics()
     }
 }

@@ -4,15 +4,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Base64;
 import android.util.Log;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import org.json.JSONObject;
 
 /** Version-pinned adapter for Andalusi's suspend function returning Result<String>. */
 public final class LegacyGoogleBridge {
     private static final String LOG_TAG = "AndalusiLegacyLogin";
+    private static final String SERVER_CLIENT_ID =
+            "752406979491-m39pf3vd9p88r5buiidqtirjt45e2k0i.apps.googleusercontent.com";
     static final String REQUEST_ID = "andalusi.legacy.request";
     private static final Object LOCK = new Object();
     private static long nextId;
@@ -36,6 +41,47 @@ public final class LegacyGoogleBridge {
     }
 
     private LegacyGoogleBridge() {}
+
+    /** Records non-identifying Google claim classifications for either sign-in implementation. */
+    public static void inspectGoogleToken(String token) {
+        try {
+            if (token == null) return;
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                Log.e(LOG_TAG, "Google credential claims: format=invalid");
+                return;
+            }
+            JSONObject header = new JSONObject(new String(
+                    Base64.decode(parts[0], Base64.URL_SAFE), StandardCharsets.UTF_8));
+            JSONObject claims = new JSONObject(new String(
+                    Base64.decode(parts[1], Base64.URL_SAFE), StandardCharsets.UTF_8));
+            String algorithm = header.optString("alg");
+            algorithm = "RS256".equals(algorithm) ? "RS256" :
+                    algorithm.isEmpty() ? "missing" : "other";
+            String issuer = claims.optString("iss");
+            issuer = ("accounts.google.com".equals(issuer) ||
+                    "https://accounts.google.com".equals(issuer)) ? "google" :
+                    issuer.isEmpty() ? "missing" : "other";
+            String authorizedParty = claims.optString("azp");
+            authorizedParty = authorizedParty.isEmpty() ? "missing" :
+                    SERVER_CLIENT_ID.equals(authorizedParty) ? "matches" : "other";
+            long issuedAt = claims.optLong("iat", 0);
+            long expiresAt = claims.optLong("exp", 0);
+            long now = System.currentTimeMillis() / 1000;
+            Log.e(LOG_TAG, "Google credential summary: alg=" + algorithm +
+                    " keyId=" + header.has("kid") + " issuer=" + issuer +
+                    " audienceMatch=" + SERVER_CLIENT_ID.equals(claims.optString("aud")) +
+                    " authorizedParty=" + authorizedParty +
+                    " noncePresent=" + !claims.optString("nonce").isEmpty() +
+                    " emailVerified=" + claims.optBoolean("email_verified", false) +
+                    " subjectPresent=" + !claims.optString("sub").isEmpty() +
+                    " ageSeconds=" + (issuedAt > 0 ? now - issuedAt : -1) +
+                    " lifetimeSeconds=" +
+                    (issuedAt > 0 && expiresAt >= issuedAt ? expiresAt - issuedAt : -1));
+        } catch (Throwable ignored) {
+            Log.e(LOG_TAG, "Google credential claims: format=unavailable");
+        }
+    }
 
     /**
      * Records enough information to diagnose Andalusi's hidden backend failure without exposing
