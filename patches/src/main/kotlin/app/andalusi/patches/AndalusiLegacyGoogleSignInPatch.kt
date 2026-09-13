@@ -5,6 +5,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -43,8 +44,7 @@ private object AndalusiGoogleBackendLoginFingerprint : Fingerprint(
     parameters = listOf("Ljava/lang/String;", "Lxl2;")
 )
 
-private fun addBackendLoginDiagnostics() {
-    val backendMethod = AndalusiGoogleBackendLoginFingerprint.method
+private fun addBackendLoginDiagnostics(backendMethod: MutableMethod) {
     // p1 is the Google ID token on this instance method. The extension records only safe,
     // non-identifying claim classifications, never the token or account fields.
     backendMethod.addInstructions(
@@ -162,7 +162,7 @@ val andalusiLegacyGoogleSignInPatch = bytecodePatch(
         // Andalusi catches every backend exception and replaces it with a generic snackbar.
         // Inspect each result immediately before it returns. The extension ignores successful
         // strings and suspended coroutine markers and logs only a safe error type/status.
-        addBackendLoginDiagnostics()
+        addBackendLoginDiagnostics(AndalusiGoogleBackendLoginFingerprint.method)
     }
 }
 
@@ -177,6 +177,6 @@ val andalusiMicroGCredentialManagerSignInPatch = bytecodePatch(
     extendWith("extensions/extension.mpe")
 
     execute {
-        addBackendLoginDiagnostics()
+        addBackendLoginDiagnostics(AndalusiGoogleBackendLoginFingerprint.method)
     }
 }
