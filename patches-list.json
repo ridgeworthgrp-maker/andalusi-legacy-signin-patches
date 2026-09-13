@@ -1,7 +1,35 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.0-dev.7",
+  "version": "1.0.0-dev.8",
   "patches": [
+    {
+      "name": "Andalusi MicroG Credential Manager sign-in",
+      "description": "Keeps official Andalusi 10.2.0 Credential Manager login and adds MicroG RE identity routing metadata.",
+      "default": false,
+      "dependencies": [
+        "ResourcePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "com.andalusi.app.android",
+          "name": null,
+          "description": null,
+          "apkFileType": null,
+          "appIconColor": null,
+          "signatures": null,
+          "targets": [
+            {
+              "version": "10.2.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
     {
       "name": "Andalusi legacy Google sign-in",
       "description": "Replaces official Andalusi 10.2.0 Credential Manager login with classic Google Sign-In so it can use MicroG RE.",

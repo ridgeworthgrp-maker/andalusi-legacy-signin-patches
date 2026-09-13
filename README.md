@@ -15,9 +15,9 @@ Click here to add these patches to Morphe: https://morphe.software/add-source?gi
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.0.0-dev.7](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/releases/tag/v1.0.0-dev.7)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
+> **[v1.0.0-dev.8](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/releases/tag/v1.0.0-dev.8)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
 <details open>
-<summary>📦 com.andalusi.app.android&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
+<summary>📦 com.andalusi.app.android&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -27,6 +27,7 @@ Click here to add these patches to Morphe: https://morphe.software/add-source?gi
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
+| [Andalusi MicroG Credential Manager sign-in](#andalusi-microg-credential-manager-sign-in) | Keeps official Andalusi 10.2.0 Credential Manager login and adds MicroG RE identity routing metadata. |  |
 | [Andalusi legacy Google sign-in](#andalusi-legacy-google-sign-in) | Replaces official Andalusi 10.2.0 Credential Manager login with classic Google Sign-In so it can use MicroG RE. |  |
 
 </details>

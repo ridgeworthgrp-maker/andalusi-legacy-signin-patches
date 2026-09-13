@@ -1,3 +1,10 @@
+## [1.0.0-dev.8](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.7...v1.0.0-dev.8) (2026-09-13)
+
+### 🐛 Bug Fixes
+
+* add MicroG Credential Manager sign-in path ([017f8c7](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/017f8c73439fc1bdea256ff3b5beb7928174b11b))
+* resolve diagnostics inside patch context ([e46a98d](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/commit/e46a98d9fa061cbe24000261d663326fc0f378c7))
+
 ## [1.0.0-dev.7](https://github.com/ridgeworthgrp-maker/andalusi-legacy-signin-patches/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2026-09-01)
 
 ### 🐛 Bug Fixes
